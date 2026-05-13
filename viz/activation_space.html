@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Activation Space — Steering Vectors</title>
+  <style>
+    body { margin: 0; background: #0f0f0f; color: #eee; font-family: sans-serif; }
+    #controls { position: fixed; top: 16px; left: 16px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 13px; }
+    input[type=range] { width: 160px; }
+    #info { position: fixed; bottom: 16px; left: 16px; font-size: 12px; color: #888; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label>Alpha: <span id="alpha-val">15</span></label>
+    <input type="range" id="alpha" min="0" max="30" value="15" />
+    <label><input type="checkbox" id="show-lora" checked /> Mostrar subespacio LoRA</label>
+    <label><input type="checkbox" id="show-steering" checked /> Mostrar steering vector</label>
+  </div>
+  <div id="info">Arrastra para rotar · Scroll para zoom</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    // --- Scene setup ---
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
+    camera.position.set(4, 3, 6);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Axes
+    scene.add(new THREE.AxesHelper(3));
+    scene.add(new THREE.GridHelper(8, 8, '#333', '#222'));
+
+    // --- Concept points ---
+    const conceptData = [
+      { label: "certain",    pos: [1.2,  0.8,  0.5], color: 0x4fc3f7 },
+      { label: "certain",    pos: [1.0,  1.0,  0.3], color: 0x4fc3f7 },
+      { label: "certain",    pos: [1.4,  0.7,  0.6], color: 0x4fc3f7 },
+      { label: "doubt",      pos: [-1.0, 0.6, -0.4], color: 0xef9a9a },
+      { label: "doubt",      pos: [-1.2, 0.8, -0.6], color: 0xef9a9a },
+      { label: "doubt",      pos: [-0.9, 0.5, -0.3], color: 0xef9a9a },
+    ];
+
+    const sphereGeo = new THREE.SphereGeometry(0.08, 16, 16);
+    conceptData.forEach(d => {
+      const mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: d.color }));
+      mesh.position.set(...d.pos);
+      scene.add(mesh);
+    });
+
+    // --- Steering vector arrow ---
+    const origin = new THREE.Vector3(1.2, 0.83, 0.47);
+    const target = new THREE.Vector3(-1.03, 0.63, -0.43);
+    const dir = target.clone().sub(origin).normalize();
+    const length = origin.distanceTo(target);
+
+    const arrowHelper = new THREE.ArrowHelper(dir, origin, length, 0xffd54f, 0.2, 0.12);
+    scene.add(arrowHelper);
+
+    // --- LoRA subspace plane ---
+    const planeGeo = new THREE.PlaneGeometry(3, 3);
+    const planeMat = new THREE.MeshStandardMaterial({
+      color: 0xa5d6a7, transparent: true, opacity: 0.25, side: THREE.DoubleSide
+    });
+    const plane = new THREE.Mesh(planeGeo, planeMat);
+    plane.rotation.x = Math.PI / 6;
+    plane.rotation.z = Math.PI / 5;
+    plane.position.set(0, 0.7, 0);
+    scene.add(plane);
+
+    // --- Steered point ---
+    const steeredGeo = new THREE.SphereGeometry(0.1, 16, 16);
+    const steeredMat = new THREE.MeshStandardMaterial({ color: 0xffd54f });
+    const steeredPoint = new THREE.Mesh(steeredGeo, steeredMat);
+    scene.add(steeredPoint);
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const dLight = new THREE.DirectionalLight(0xffffff, 1);
+    dLight.position.set(5, 8, 5);
+    scene.add(dLight);
+
+    // --- Controls ---
+    const alphaSlider = document.getElementById('alpha');
+    const alphaVal = document.getElementById('alpha-val');
+    const showLora = document.getElementById('show-lora');
+    const showSteering = document.getElementById('show-steering');
+
+    function updateSteered() {
+      const alpha = parseFloat(alphaSlider.value) / 30;
+      // Interpola el punto desde el centroide "certain" hacia el centroide "doubt"
+      const start = new THREE.Vector3(1.2, 0.83, 0.47);
+      steeredPoint.position.lerpVectors(start, target, alpha);
+    }
+
+    alphaSlider.addEventListener('input', () => {
+      alphaVal.textContent = alphaSlider.value;
+      updateSteered();
+    });
+
+    showLora.addEventListener('change', () => { plane.visible = showLora.checked; });
+    showSteering.addEventListener('change', () => { arrowHelper.visible = showSteering.checked; });
+
+    updateSteered();
+
+    // --- Render loop ---
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>
