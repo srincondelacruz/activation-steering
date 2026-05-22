@@ -26,7 +26,7 @@ notebooks/
   01_transformerlens_basics.ipynb   # Cargar GPT-2, inspeccionar activaciones, hooks
   02_steering_vectors.ipynb         # Calcular e inyectar steering vectors (GPT-2)
   02b_abliteration_español.ipynb    # Abliteración del refusal (Qwen2.5-0.5B-Instruct)
-  03_lora_comparison.ipynb          # Comparativa LoRA vs steering
+  03b_LoRA_comparassion.ipynb       # Comparativa LoRA vs steering vs abliteración
 
 demo/
   app.py                            # Personality Editor (Gradio)
@@ -54,24 +54,36 @@ Reproducción de Arditi et al. 2024 con Qwen2.5-0.5B-Instruct en español:
 - Verifica que las capacidades generales del modelo no se degradan
 - Experimento original: similitud coseno entre la dirección de rechazo en ES y EN (0.56) y test de transferencia cruzada
 
-### 03 — LoRA vs Steering
-Comparativa directa de ambas técnicas sobre la misma tarea: coste computacional, reversibilidad, efectos secundarios y calidad de output.
+### 03b — LoRA vs Steering vs Abliteración
+Comparativa directa de tres técnicas sobre la misma tarea (modo conspiranoico tierra plana en Qwen2.5-0.5B): steering vectors, steering + abliteración combinados, y LoRA. Mide coste, reversibilidad, generalización y calidad de output. El resultado es un fallo informativo: el steering no funciona para esta tarea, y entender *por qué* es el hallazgo principal. Incluye un experimento extra de LoRA de abliteración con análisis geométrico de ΔW.
 
 ---
 
 ## Resultados destacados
 
-| Métrica | Steering | LoRA |
-|---------|----------|------|
-| Setup | ~segundos | ~minutos |
-| Memoria extra | 0 | adaptadores |
-| Reversible | Sí | No |
-| Modifica pesos | No | Sí |
+**Comparativa de métodos (03b):**
+
+| Métrica | Steering | Steering+Abliteración | LoRA |
+|---------|----------|-----------------------|------|
+| Setup | ~segundos | ~segundos | ~minutos |
+| Memoria extra | 0 | 0 | adaptadores (~540K params) |
+| Reversible | Sí | Sí | No |
+| Modifica pesos | No | No | Sí |
+| Resultado en la tarea | Falla | Falla | Funciona, generaliza |
+
+- **El steering falla y no hay alpha bueno:** alpha bajo → el modelo rechaza; alpha alto → output fuera de distribución (tokens basura). No existe ventana intermedia.
+- **Steering + abliteración tampoco rescata la tarea:** el contenido conspiranoico y el refusal de desinformación comparten dirección geométrica en el residual stream. No son separables — abliterar el refusal destruye también la representación semántica.
+- **El LoRA funciona y generaliza:** produce reencuadre conspiranoico en prompts held-out que nunca vio en entrenamiento. Modifica pesos, no activaciones en inferencia, por lo que no lucha contra el espacio de activaciones del modelo.
+- **Lección:** la intervención sobre activaciones solo es quirúrgica cuando el comportamiento objetivo es geométricamente separable. Contrasta con 02b, donde la abliteración del refusal de contenido dañino sí funciona.
 
 **Abliteración (02b):**
 - Señal de rechazo: norma 0.05 en capa 0 → 24.50 en capa 23 (el modelo decide rechazar tarde)
 - Proyección ortogonal produce outputs más coherentes que sustracción directa
 - Similitud coseno refusal direction ES↔EN: 0.56 (representación parcialmente compartida entre idiomas)
+
+**LoRA de abliteración (03b):**
+- Suprime el refusal entrenando con pares *(prompt dañino → respuesta útil)* en lugar de proyección geométrica
+- Análisis geométrico: similitud coseno entre ΔW y el refusal vector ≈ 0.00–0.08 → el LoRA y la abliteración logran el mismo comportamiento por caminos geométricos completamente distintos
 
 ---
 
