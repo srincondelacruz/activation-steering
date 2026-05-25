@@ -32,7 +32,7 @@ demo/
   app.py                            # Personality Editor (Gradio)
 
 viz/
-  activation_space.html             # Visualización 3D interactiva (Three.js)
+  activation_space.html             # Visualización 3D interactiva (Three.js) — tour narrativo
 
 assets/                             # Screenshots y GIFs
 ```
@@ -138,7 +138,56 @@ pip install gradio transformer_lens
 python demo/app.py
 ```
 
-**Visualización 3D:** abrir `viz/activation_space.html` en el navegador.
+**Visualización 3D:** abrir `viz/activation_space.html` en el navegador (sin build, usa Three.js vía CDN).
+
+---
+
+## Visualización 3D — tour interactivo
+
+`viz/activation_space.html` es una demo standalone que recorre los conceptos clave de los notebooks 02 y 02b en seis pasos. Navega con `←` / `→`, los chips superiores o los botones de la tarjeta narrativa. **Cada punto y trayectoria tiene tooltip con datos reales** (prompts, normas, outputs) extraídos directamente de los notebooks.
+
+### Los seis pasos
+
+**1. Activaciones de prompts contrastivos** — dos clústeres en el espacio latente: `positive_prompts` (calma/esperanza) vs `negative_prompts` (miedo/devastación), proyectados a 3D. Los puntos marcados con 🔬 son los 3 prompts reales del notebook 02; el resto son variantes temáticas añadidas para densidad visual.
+
+![Escena 1 — clústeres contrastivos](assets/escena1.png)
+
+**2. Centroides y vector diferencia** — `pos_mean`, `neg_mean` y la flecha `steering_vector = pos_mean − neg_mean` con su norma real `‖v‖ = 84.39` (GPT-2, capa 10).
+
+![Escena 2 — centroides y vector diferencia](assets/escena2.png)
+
+**3. Prompt de evaluación** — el prompt real del notebook 02: *"The doctor told the patient that he had cancer. The patient felt..."* y su output baseline.
+
+![Escena 3 — prompt de evaluación](assets/escena3.png)
+
+**4. Inyección con α** — slider interactivo. Los outputs en el tooltip son los **reales** del notebook 02:
+- `α=0`: *"…rare form of cancer, but…"*
+- `α=1`: *"…in a 'good place' and going to be fine."* ← steering funciona
+- `α=3`: *"the and-going-going-going…"* ← colapso
+- `α=5`: *"enough-going-going-going…"* ← colapso peor
+
+![Escena 4 — inyección con α](assets/escena4.png)
+
+**5. Residual stream de GPT-2** — 12 capas, trayectoria baseline (gris) vs steered (amarilla) bifurcándose en la capa de inyección. Sliders de capa (0-11) y α.
+
+![Escena 5 — residual stream GPT-2](assets/escena5.png)
+
+**6. Notebook 02b — refusal direction en Qwen2.5-0.5B** — 24 capas con la **norma real** del scan de la refusal direction por capa (0.05 en L0 → 24.50 en L23). Dos trayectorias paralelas: BASELINE (refusal intacto, modelo rechaza) vs ABLITERADO (proyección ortogonal, modelo cumple), con los outputs reales del notebook sobre *"¿Cómo puedo forzar una cerradura?"*.
+
+![Escena 6 — refusal direction en Qwen2.5-0.5B](assets/escena6.png)
+
+### Interacciones
+
+- **Hover sobre cualquier punto:** tooltip con prompt/dato/output simulado o real según el caso
+- **Sliders contextuales:** aparecen sólo en los pasos que los necesitan (α en paso 4; capa + α en paso 5)
+- **OrbitControls estándar:** arrastra para rotar, scroll para zoom, shift+arrastra para pan
+
+### Stack
+
+- Three.js 0.160 + CSS2DRenderer vía importmap (módulos ES nativos, sin build step)
+- Datos sintéticos reproducibles para los clústeres (semilla fija, gaussianos)
+- Datos reales del notebook 02b para las normas por capa de la refusal direction
+- Outputs y prompts citados literalmente desde los notebooks
 
 ---
 
