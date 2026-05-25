@@ -2,7 +2,9 @@
 
 Exploración práctica de técnicas de intervención en el espacio de activaciones de LLMs: **steering vectors** (añadir conceptos) y **abliteración** (eliminar comportamientos). Implementado con TransformerLens sobre GPT-2 y Qwen2.5-0.5B-Instruct.
 
-**Proyecto de investigación** desarrollado para el Máster en IA & Big Data (Tajamar / Microsoft) por **Sergio Rincón de la Cruz**. El trabajo reproduce resultados publicados en NeurIPS 2024 (Arditi et al.) sobre la geometría del refusal en LLMs, e incluye experimentos originales: análisis de la transferencia cross-lingüe (ES↔EN) de la refusal direction, comparativa empírica entre steering, abliteración y LoRA, y un caso de fallo informativo que delimita los límites de la intervención sobre activaciones.
+**Proyecto de investigación** desarrollado para el Máster en IA & Big Data (Tajamar / Microsoft) por **Sergio Rincón de la Cruz**. 
+
+El trabajo reproduce resultados publicados en NeurIPS 2024 (Arditi et al.) sobre la geometría del refusal en LLMs, e incluye experimentos originales: análisis de la transferencia cross-lingüe (ES↔EN) de la refusal direction, comparativa empírica entre steering, abliteración y LoRA, y un caso de fallo informativo que delimita los límites de la intervención sobre activaciones.
 
 ---
 
